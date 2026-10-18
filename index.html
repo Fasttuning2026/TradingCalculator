@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Прогрессия объёма</title>
+<meta name="theme-color" content="#0b0d10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Лестница">
+<link rel="apple-touch-icon" href="data:image/svg%2Bxml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='38' fill='%230b0d10'/%3E%3Crect x='34' y='118' width='26' height='40' fill='%233ecf8e'/%3E%3Crect x='70' y='92' width='26' height='66' fill='%233ecf8e'/%3E%3Crect x='106' y='60' width='26' height='98' fill='%23e0a84c'/%3E%3Crect x='142' y='34' width='16' height='124' fill='%23ef5b5b'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg%2Bxml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='38' fill='%230b0d10'/%3E%3Crect x='34' y='118' width='26' height='40' fill='%233ecf8e'/%3E%3Crect x='70' y='92' width='26' height='66' fill='%233ecf8e'/%3E%3Crect x='106' y='60' width='26' height='98' fill='%23e0a84c'/%3E%3Crect x='142' y='34' width='16' height='124' fill='%23ef5b5b'/%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D0%9F%D1%80%D0%BE%D0%B3%D1%80%D0%B5%D1%81%D1%81%D0%B8%D1%8F%20%D0%BE%D0%B1%D1%8A%D1%91%D0%BC%D0%B0%22%2C%22short_name%22%3A%22%D0%9B%D0%B5%D1%81%D1%82%D0%BD%D0%B8%D1%86%D0%B0%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230b0d10%22%2C%22theme_color%22%3A%22%230b0d10%22%7D">
+<style>
+  :root{
+    --bg: #0b0d10;
+    --panel: #14171b;
+    --panel2: #1a1e23;
+    --line: #262b31;
+    --text: #e8eaed;
+    --dim: #7b838d;
+    --buy: #3ecf8e;
+    --buy-dim: #1c3a2c;
+    --sell: #ef5b5b;
+    --sell-dim: #3a1e1e;
+    --amber: #e0a84c;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html{ max-width:100%; overflow-x:hidden; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+    padding: 16px 12px 40px;
+    min-height:100vh;
+    max-width:100%; overflow-x:hidden;
+  }
+  h1{
+    font-size:15px; font-weight:600; letter-spacing:0.02em;
+    color:var(--dim); text-transform:uppercase; margin:0 0 14px;
+  }
+  .capital-row{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px; margin-bottom:10px;
+  }
+  .capital-row label{ font-size:11.5px; color:var(--dim); line-height:1.25; flex:0 1 auto; min-width:0; }
+  .capital-row input{
+    flex:1 1 0; width:0; min-width:0;
+    background:transparent; border:none; color:var(--text);
+    font-family:inherit; font-size:19px; font-weight:600; text-align:right;
+    outline:none;
+  }
+  .capital-row .pfx{color:var(--dim); font-size:15px; flex:0 0 auto;}
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:0 10px; }
+  .grid2 .capital-row input{ font-size:17px; }
+  .presets{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .presets button{
+    flex:1 1 0; min-width:0; background:var(--panel2); border:1px solid var(--line); color:var(--dim);
+    font-family:inherit; font-size:11.5px; padding:7px 2px; border-radius:8px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .presets button.active{ color:var(--text); border-color:var(--amber); }
+
+  .derived{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px; margin-bottom:16px;
+    font-size:11.5px; color:var(--dim); line-height:1.6;
+  }
+  .derived b{ color:var(--text); font-weight:600; }
+  .derived b.amb{ color:var(--amber); }
+
+  .side{
+    border-radius:14px; padding:16px; margin-bottom:14px;
+    border:1px solid var(--line); overflow:hidden;
+  }
+  .side.buy{ background:linear-gradient(180deg, var(--buy-dim), var(--panel) 70%); }
+  .side.sell{ background:linear-gradient(180deg, var(--sell-dim), var(--panel) 70%); }
+
+  .side-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
+  .side-head .dir{ font-size:14px; font-weight:700; letter-spacing:0.06em; }
+  .side.buy .dir{ color:var(--buy); }
+  .side.sell .dir{ color:var(--sell); }
+  .side-head .stage{ font-size:12px; color:var(--dim); text-align:right; }
+
+  .big{ font-size:32px; font-weight:700; line-height:1.1; margin-bottom:4px; word-break:break-word; }
+  .big .unit{ font-size:15px; color:var(--dim); font-weight:500; margin-left:6px;}
+  .sub{ font-size:12px; color:var(--dim); display:flex; gap:6px 14px; margin-bottom:8px; flex-wrap:wrap;}
+  .sub > span{ min-width:0; }
+  .sub b{ color:var(--text); font-weight:600; }
+  .sub b.neg{ color:var(--sell); }
+  .sub b.pos{ color:var(--buy); }
+  .sub b.amb{ color:var(--amber); }
+
+  .bar{
+    height:4px; border-radius:2px; background:var(--panel2);
+    overflow:hidden; margin-bottom:12px; border:1px solid var(--line);
+  }
+  .bar i{ display:block; height:100%; background:var(--amber); }
+
+  .btn-row{ display:flex; gap:8px; }
+  .btn{
+    flex:1; border:none; border-radius:10px; padding:13px 0;
+    font-family:inherit; font-size:13px; font-weight:700; letter-spacing:0.03em;
+  }
+  .side.buy .btn.stop{ background:var(--buy); color:#08130d; }
+  .side.sell .btn.stop{ background:var(--sell); color:#1a0808; }
+  .btn.reset{ background:var(--panel2); color:var(--dim); border:1px solid var(--line); }
+  .btn:active{ opacity:0.75; }
+  .btn:disabled{ opacity:0.3; }
+
+  .table-toggle{
+    width:100%; background:none; border:none; color:var(--dim);
+    font-family:inherit; font-size:12px; padding:10px 0; text-align:center;
+    border-top:1px solid var(--line); margin-top:6px;
+  }
+  #tableWrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table{ width:100%; border-collapse:collapse; font-size:11px; margin-top:8px;}
+  th{ color:var(--dim); font-weight:600; text-align:right; padding:6px 2px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  th:first-child, td:first-child{ text-align:left; }
+  td{ text-align:right; padding:6px 2px; border-bottom:1px solid #1c2025; white-space:nowrap; }
+  td.neg{ color:var(--sell); }
+  td.pos{ color:var(--buy); }
+  tr.cur td{ background:#1e1a12; }
+  tr.cur td:first-child{ color:var(--amber); font-weight:700; }
+  tr.out td{ color:#4a3030; }
+
+  .depth{
+    overflow:hidden;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:12px; margin-top:16px;
+  }
+  .depth h2{
+    font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;
+    color:var(--dim); margin:0 0 4px;
+  }
+  .depth p{ font-size:11px; color:var(--dim); margin:0 0 10px; line-height:1.5; }
+  .depth p b{ color:var(--amber); }
+  .depth table{ margin-top:0; }
+  .depth td.now{ color:var(--amber); font-weight:700; }
+
+  .calc{
+    overflow:hidden;
+    background:var(--panel); border:1px solid var(--amber);
+    border-radius:12px; padding:14px; margin-top:16px;
+  }
+  .calc h2{
+    font-size:11px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;
+    color:var(--amber); margin:0 0 8px;
+  }
+  .calc .in{
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel2); border:1px solid var(--line);
+    border-radius:10px; padding:8px 12px; margin-bottom:12px;
+  }
+  .calc .in label{ font-size:11.5px; color:var(--dim); line-height:1.25; flex:0 1 auto; min-width:0; }
+  .calc .in input{
+    flex:1 1 0; width:0; min-width:0;
+    background:transparent; border:none; color:var(--text);
+    font-family:inherit; font-size:19px; font-weight:600; text-align:right; outline:none;
+  }
+  .calc .in .pfx{ color:var(--dim); font-size:15px; flex:0 0 auto; }
+  .lossbtns{ display:flex; gap:8px; margin:-4px 0 12px; }
+  .lossbtns button{
+    flex:1 1 0; min-width:0; background:var(--panel2); border:1px solid var(--line);
+    color:var(--amber); font-family:inherit; font-size:12px; font-weight:600;
+    padding:9px 0; border-radius:8px;
+  }
+  .lossbtns button:active{ opacity:0.7; }
+  .calc .out{ font-size:13px; color:var(--dim); line-height:1.7; }
+  .calc .out .lot{ font-size:28px; font-weight:700; color:var(--text); line-height:1.15; }
+  .calc .out .lot .unit{ font-size:14px; color:var(--dim); font-weight:500; margin-left:6px; }
+  .calc .out b{ color:var(--text); font-weight:600; }
+  .calc .out b.amb{ color:var(--amber); }
+  .calc .out b.neg{ color:var(--sell); }
+  .calc .out b.pos{ color:var(--buy); }
+  .calc .warn{ color:var(--sell); font-weight:600; }
+  .calc.buy{ border-color:var(--buy); }
+  .calc.sell{ border-color:var(--sell); }
+  .calc.buy h2{ color:var(--buy); }
+  .calc.sell h2{ color:var(--sell); }
+  .calc.buy .lossbtns button{ color:var(--buy); }
+  .calc.sell .lossbtns button{ color:var(--sell); }
+  .calc .lossbtns button.clr{ color:var(--dim); flex:0 0 90px; }
+  .calcs{ display:flex; flex-direction:column; gap:12px; }
+  .calc-head{ font-size:10.5px; color:var(--dim); letter-spacing:0.04em;
+    text-transform:uppercase; margin:18px 0 -4px; }
+  .hint{ font-size:11px; color:var(--dim); margin-top:14px; line-height:1.55; }
+  .hint b{ color:var(--amber); font-weight:600; }
+  .hint .warn{ color:var(--sell); font-weight:600; }
+</style>
+</head>
+<body>
+
+<h1>Прогрессия объёма · v13</h1>
+
+<div class="capital-row">
+  <label>Капитал</label>
+  <span class="pfx">$</span>
+  <input type="number" id="capitalInput" inputmode="decimal">
+</div>
+<div class="presets" id="capPresets">
+  <button data-cap="2000">$2k</button>
+  <button data-cap="3000">$3k</button>
+  <button data-cap="4000">$4k</button>
+  <button data-cap="5000">$5k</button>
+</div>
+
+<div class="grid2">
+  <div class="capital-row">
+    <label>Базовый<br>объём</label>
+    <span class="pfx">BTC</span>
+    <input type="number" id="lotInput" inputmode="decimal" step="0.001">
+  </div>
+  <div class="capital-row">
+    <label>Цена<br>BTC</label>
+    <span class="pfx">$</span>
+    <input type="number" id="priceInput" inputmode="decimal">
+  </div>
+  <div class="capital-row">
+    <label>Стоп<br>базы</label>
+    <span class="pfx">−$</span>
+    <input type="number" id="stopInput" inputmode="decimal">
+  </div>
+  <div class="capital-row">
+    <label>Тейк<br>базы</label>
+    <span class="pfx">+$</span>
+    <input type="number" id="takeInput" inputmode="decimal">
+  </div>
+  <div class="capital-row">
+    <label>Цель<br>за серию</label>
+    <span class="pfx">+$</span>
+    <input type="number" id="targetInput" inputmode="decimal">
+  </div>
+  <div class="capital-row">
+    <label>Плечо</label>
+    <span class="pfx">×</span>
+    <input type="number" id="levInput" inputmode="decimal">
+  </div>
+</div>
+
+<div class="derived" id="derivedBox"></div>
+
+<div class="side buy" id="buyPanel"></div>
+<div class="side sell" id="sellPanel"></div>
+
+<button class="table-toggle" id="tableToggle">Показать таблицу ▾</button>
+<div id="tableWrap" style="display:none;"></div>
+
+<div class="calc-head">Следующий вход от факта — раздельно по направлениям</div>
+<div class="calcs">
+
+  <div class="calc buy">
+    <h2>BUY · long</h2>
+    <div class="in">
+      <label>Все стопы<br>серии в лонг</label>
+      <span class="pfx">−$</span>
+      <input type="text" id="lossBuy" placeholder="40+56" inputmode="text">
+    </div>
+    <div class="lossbtns">
+      <button data-loss="add" data-dir="Buy">+ стоп</button>
+      <button data-loss="clr" data-dir="Buy" class="clr">сброс</button>
+    </div>
+    <div class="out" id="outBuy"></div>
+  </div>
+
+  <div class="calc sell">
+    <h2>SELL · short</h2>
+    <div class="in">
+      <label>Все стопы<br>серии в шорт</label>
+      <span class="pfx">−$</span>
+      <input type="text" id="lossSell" placeholder="40+56" inputmode="text">
+    </div>
+    <div class="lossbtns">
+      <button data-loss="add" data-dir="Sell">+ стоп</button>
+      <button data-loss="clr" data-dir="Sell" class="clr">сброс</button>
+    </div>
+    <div class="out" id="outSell"></div>
+  </div>
+
+</div>
+
+<div class="hint" id="bothWarn"></div>
+
+<div class="depth" id="depthBox"></div>
+
+<div class="hint" id="hintBox"></div>
+
+<script>
+/* ── МОДЕЛЬ v13 ───────────────────────────────────────────────
+   Вводные — фактические ЧИСТЫЕ деньги на базовом объёме:
+     база 0.05 BTC, стоп −$40, тейк +$100 (комиссия уже внутри).
+   Отсюда ход в долларах на монету:
+     стоп  = 40 / 0.05  = $800/BTC
+     тейк  = 100 / 0.05 = $2000/BTC
+   Правило серии: каждый следующий вход при тейке закрывает ВСЕ стопы
+   серии и даёт сверху «цель за серию» (по умолчанию $100):
+     объём_n = (цель + сумма стопов серии) ÷ тейк_на_монету
+   При цели = тейку базы шаг лестницы ровно 1 + стоп/тейк = ×1.40.
+   Объём округляется ВВЕРХ до шага лота — профит выходит ≥ цели.     */
+const MAX_STAGES = 15;
+const LOT_STEP   = 0.001;
+
+let state = {
+  capital: 4000, price: 65000, lot: 0.05, stopUsd: 40, takeUsd: 100,
+  target: 100, lev: 25, lossBuy: '', lossSell: '', buyStage: 1, sellStage: 1
+};
+
+const num = v => parseFloat(String(v).replace(',','.')) || 0;
+function P(){ return {
+  capital: num(state.capital), price: num(state.price), lot: num(state.lot),
+  stop: num(state.stopUsd), take: num(state.takeUsd), target: num(state.target),
+  lev: num(state.lev) || 1
+};}
+function stopPerBTC(){ const p=P(); return p.lot ? p.stop/p.lot : 0; }
+function takePerBTC(){ const p=P(); return p.lot ? p.take/p.lot : 0; }
+function stepK(){ const p=P(); return p.take ? 1 + p.stop/p.take : 0; }
+function roundUp(x){ return Math.ceil(x/LOT_STEP - 1e-9) * LOT_STEP; }
+function lotFor(cumLoss){
+  const t = takePerBTC();
+  return t ? roundUp((P().target + cumLoss) / t) : 0;
+}
+
+function computeLevels(){
+  const p = P(), sp = stopPerBTC(), tp = takePerBTC();
+  const levels = [];
+  let cum = 0;
+  for(let n=1;n<=MAX_STAGES;n++){
+    const lot = lotFor(cum);
+    const stop = lot * sp;
+    const notional = lot * p.price;
+    const margin = notional / p.lev;
+    const cumIfLost = cum + stop;
+    levels.push({
+      n, btc: lot, stop, cumBefore: cum, cumIfLost,
+      profit: lot * tp - cum,
+      notional, margin,
+      needBal: Math.max(cumIfLost, cum + margin),   // чтобы зайти и пережить стоп
+      fits: Math.max(cumIfLost, cum + margin) <= p.capital
+    });
+    cum = cumIfLost;
+  }
+  return levels;
+}
+function depthFits(levels){
+  let d = 0;
+  for(const l of levels){ if(l.fits) d = l.n; else break; }
+  return d;
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem('position-sizer-state-v13');
+    if(raw){ state = Object.assign(state, JSON.parse(raw)); }
+    else{
+      // перенос из v12: цена, стопы серий, ступени
+      const old = localStorage.getItem('position-sizer-state-v12');
+      if(old){
+        const o = JSON.parse(old);
+        ['price','lossBuy','lossSell'].forEach(k=>{ if(o[k]!==undefined) state[k]=o[k]; });
+      }
+    }
+  }catch(e){}
+  render();
+}
+function saveState(){
+  try{ localStorage.setItem('position-sizer-state-v13', JSON.stringify(state)); }catch(e){}
+}
+
+function fmtBTC(x){ return x.toFixed(3); }
+function fmtUSD(x){ return Math.abs(x).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtUSD0(x){ return Math.round(Math.abs(x)).toLocaleString('en-US'); }
+
+function renderDerived(levels){
+  const p = P(), d = depthFits(levels);
+  document.getElementById('derivedBox').innerHTML = `
+    ход стопа <b>$${fmtUSD0(stopPerBTC())}</b>/монету · ход тейка <b>$${fmtUSD0(takePerBTC())}</b>/монету
+    · тейк к стопу <b>${p.stop ? (p.take/p.stop).toFixed(2) : '—'}</b><br>
+    шаг лестницы <b class="amb">×${stepK().toFixed(3)}</b>
+    · первый вход <b>${fmtBTC(levels[0].btc)} BTC</b>
+    · капитала хватает на <b class="amb">${d} ступ.</b>`;
+}
+
+function renderSide(id, dirLabel, stage, cls, levels){
+  const p   = P();
+  const cur = levels[Math.min(stage, MAX_STAGES) - 1];
+  const isMax = stage >= MAX_STAGES;
+  document.getElementById(id).innerHTML = `
+    <div class="side-head">
+      <span class="dir">${dirLabel}</span>
+      <span class="stage">${stage===1 ? 'первый вход' : 'вход №'+stage+' · после '+(stage-1)+' стоп'+((stage-1)===1?'а':'ов')}</span>
+    </div>
+    <div class="big">${fmtBTC(cur.btc)}<span class="unit">BTC</span></div>
+    <div class="sub">
+      <span>стоп <b class="neg">−$${fmtUSD(cur.stop)}</b></span>
+      <span>при тейке <b class="pos">+$${fmtUSD(cur.profit)}</b> за серию</span>
+      <span>накоплено <b class="neg">−$${fmtUSD(cur.cumIfLost)}</b> из $${fmtUSD0(p.capital)}</span>
+      <span>маржа <b>$${fmtUSD0(cur.margin)}</b> (×${p.lev}, notional $${fmtUSD0(cur.notional)})</span>
+      ${!cur.fits ? `<span><b class="neg">капитала на эту ступень не хватает</b></span>` : ''}
+    </div>
+    <div class="bar"><i style="width:${Math.min(100, p.capital ? cur.cumIfLost/p.capital*100 : 0).toFixed(1)}%"></i></div>
+    <div class="btn-row">
+      <button class="btn stop" data-action="stop" data-side="${cls}" ${isMax?'disabled':''}>Стоп ${isMax?'(предел)':'→ вход '+(stage+1)}</button>
+      <button class="btn reset" data-action="reset" data-side="${cls}">Прибыль / Сброс</button>
+    </div>`;
+}
+
+function renderTable(levels){
+  const rows = levels.map(l => `
+    <tr class="${(l.n===state.buyStage||l.n===state.sellStage)?'cur':''} ${l.fits?'':'out'}">
+      <td>${l.n}</td>
+      <td>${fmtBTC(l.btc)}</td>
+      <td>−${fmtUSD0(l.stop)}</td>
+      <td>−${fmtUSD0(l.cumIfLost)}</td>
+      <td class="pos">+${fmtUSD0(l.profit)}</td>
+      <td>${fmtUSD0(l.margin)}</td>
+    </tr>`).join('');
+  document.getElementById('tableWrap').innerHTML = `
+    <table>
+      <tr><th>№</th><th>BTC</th><th>стоп</th><th>накопл.</th><th>тейк</th><th>маржа</th></tr>
+      ${rows}
+    </table>`;
+}
+
+function renderDepth(levels){
+  const p = P(), d = depthFits(levels);
+  const rows = levels.filter(l => l.n >= 8).map(l => `
+    <tr>
+      <td class="${l.n===d?'now':''}">${l.n} ступеней</td>
+      <td class="${l.n===d?'now':''}">$${fmtUSD0(l.needBal)}</td>
+      <td>${l.needBal <= p.capital ? 'есть' : '+$'+fmtUSD0(l.needBal - p.capital)}</td>
+    </tr>`).join('');
+  document.getElementById('depthBox').innerHTML = `
+    <h2>Запас глубины</h2>
+    <p>Сколько нужно на счёте, чтобы зайти на ступень и пережить её стоп
+       (учтена маржа при плече ×${p.lev}). Сейчас на $${fmtUSD0(p.capital)} — <b>${d} ступ.</b>
+       Шаг ×${stepK().toFixed(3)}: каждая новая ступень стоит почти как все предыдущие вместе.</p>
+    <table>${rows}</table>`;
+}
+
+function parseLoss(str){
+  if(str === undefined || str === null) return NaN;
+  const parts = String(str).replace(/[^0-9.,+\s]/g,'').split('+');
+  let total = 0, seen = false;
+  for(const p of parts){
+    const v = parseFloat(p.replace(',','.').trim());
+    if(!isNaN(v)){ total += v; seen = true; }
+  }
+  return seen ? total : NaN;
+}
+
+function renderCalc(dir){
+  const p    = P();
+  const loss = parseLoss(dir==='Buy' ? state.lossBuy : state.lossSell);
+  const out  = document.getElementById('out'+dir);
+  const word = dir==='Buy' ? 'лонг' : 'шорт';
+  const first = lotFor(0);
+
+  if(!(loss > 0)){
+    out.innerHTML = `Серия в ${word} чистая. Первый вход <b>${fmtBTC(first)} BTC</b>
+      (стоп −$${fmtUSD(first*stopPerBTC())}, тейк +$${fmtUSD(first*takePerBTC())}).<br>
+      Забрал стоп — вбей его сюда; список через плюс (<b>40+56</b>), складывать в уме не надо.`;
+    return;
+  }
+
+  const lot      = lotFor(loss);
+  const nextStop = lot * stopPerBTC();
+  const profit   = lot * takePerBTC() - loss;
+  const k        = stepK();
+  const stage    = (p.target > 0 && k > 1) ? Math.log(1 + loss/p.target)/Math.log(k) + 1 : NaN;
+  const margin   = lot * p.price / p.lev;
+  const left     = p.capital - loss;
+  const over     = loss >= p.capital;
+
+  out.innerHTML = `
+    <div style="font-size:11.5px; margin-bottom:2px;">стопы серии в ${word} <b class="neg">−$${fmtUSD(loss)}</b></div>
+    <div class="lot">${fmtBTC(lot)}<span class="unit">BTC</span></div>
+    <div>= ($${fmtUSD0(p.target)} + $${fmtUSD0(loss)}) ÷ $${fmtUSD0(takePerBTC())}, округлено вверх</div>
+    <div>при тейке <b class="pos">+$${fmtUSD(profit)}</b> за серию · стоп этого входа <b class="neg">−$${fmtUSD(nextStop)}</b></div>
+    <div>по лестнице это вход <b class="amb">№${isNaN(stage)?'—':stage.toFixed(1)}</b> · маржа <b>$${fmtUSD0(margin)}</b></div>
+    <div>останется депозита <b>${over?'—':'$'+fmtUSD(left)}</b> из $${fmtUSD0(p.capital)}
+      ${over ? '<span class="warn">· убыток перекрыл депозит</span>' : ''}</div>
+    ${loss + nextStop > p.capital && !over ? `<div class="warn">этот стоп выйдет за депозит: −$${fmtUSD(loss+nextStop)} из $${fmtUSD0(p.capital)}</div>` : ''}
+    ${loss + margin > p.capital && !over ? `<div class="warn">маржи на этот вход не хватит при ×${p.lev}</div>` : ''}`;
+}
+
+function renderCalcs(){
+  renderCalc('Buy'); renderCalc('Sell');
+  const lb = parseLoss(state.lossBuy), ls = parseLoss(state.lossSell);
+  const cap = P().capital;
+  const box = document.getElementById('bothWarn');
+  box.innerHTML = (lb > 0 && ls > 0)
+    ? `<span class="${lb+ls >= cap ? 'warn' : ''}">Две серии открыты одновременно: суммарно
+        −$${fmtUSD(lb+ls)} из $${fmtUSD0(cap)}. Лестница считает каждое направление
+        от ПОЛНОГО капитала, поэтому при работе в обе стороны сразу запас глубины меньше расчётного.</span>`
+    : '';
+}
+
+function renderHint(levels){
+  const p = P();
+  const badTarget = p.target > p.take + 1e-9 || p.target < p.take - 1e-9;
+  document.getElementById('hintBox').innerHTML = `
+    <b>Вводные — твои фактические чистые деньги на базовом объёме</b> (комиссия уже внутри стопа и тейка).
+    Из них прога сама выводит ход в долларах на монету, поэтому от цены BTC зависят только notional и маржа.<br><br>
+    Каждый следующий объём = <b>(цель + все стопы серии) ÷ ход тейка на монету</b>. Поэтому тейк на любой ступени
+    закрывает всю серию и даёт не меньше цели. Шаг ×${stepK().toFixed(3)} = 1 + стоп/тейк: чем хуже отношение
+    тейка к стопу, тем круче лестница и тем дороже глубина.<br><br>
+    ${badTarget ? `Цель за серию ($${fmtUSD0(p.target)}) отличается от тейка базы ($${fmtUSD0(p.take)}),
+      поэтому первый вход уже не равен базовому объёму, а ${fmtBTC(levels[0].btc)} BTC.<br><br>` : ''}
+    Вся таблица держится на соотношении стоп/тейк. Если реальный стоп вышел другим — считай по блоку
+    «от факта», он берёт фактические суммы.<br><br>
+    Состояние сохраняется на этом устройстве.`;
+}
+
+function render(){
+  const ids = {capitalInput:'capital', priceInput:'price', lotInput:'lot', stopInput:'stopUsd',
+               takeInput:'takeUsd', targetInput:'target', levInput:'lev'};
+  for(const [id,key] of Object.entries(ids)){
+    const el = document.getElementById(id);
+    if(document.activeElement !== el) el.value = state[key];
+  }
+  document.getElementById('lossBuy').value  = state.lossBuy;
+  document.getElementById('lossSell').value = state.lossSell;
+  document.querySelectorAll('#capPresets button').forEach(b=>{
+    b.classList.toggle('active', num(b.dataset.cap)===num(state.capital));
+  });
+  state.buyStage  = Math.min(state.buyStage,  MAX_STAGES);
+  state.sellStage = Math.min(state.sellStage, MAX_STAGES);
+  const levels = computeLevels();
+  renderDerived(levels);
+  renderSide('buyPanel','BUY',state.buyStage,'buy',levels);
+  renderSide('sellPanel','SELL',state.sellStage,'sell',levels);
+  renderTable(levels);
+  renderCalcs();
+  renderDepth(levels);
+  renderHint(levels);
+}
+
+const bind = {capitalInput:'capital', priceInput:'price', lotInput:'lot', stopInput:'stopUsd',
+              takeInput:'takeUsd', targetInput:'target', levInput:'lev'};
+for(const [id,key] of Object.entries(bind)){
+  document.getElementById(id).addEventListener('input', e=>{
+    state[key] = e.target.value; render(); saveState();
+  });
+}
+document.querySelectorAll('#capPresets button').forEach(b=>{
+  b.addEventListener('click', ()=>{ state.capital = b.dataset.cap; render(); saveState(); });
+});
+document.querySelectorAll('button[data-loss]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const key = 'loss' + b.dataset.dir;
+    const inp = document.getElementById(key);
+    if(b.dataset.loss === 'clr'){
+      state[key] = ''; inp.value = '';
+    } else {
+      const cur = String(state[key] || '').trim();
+      if(cur === '' || cur.endsWith('+')) return;
+      state[key] = cur + '+'; inp.value = state[key]; inp.focus();
+    }
+    renderCalcs(); saveState();
+  });
+});
+['lossBuy','lossSell'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', e=>{
+    state[id] = e.target.value; renderCalcs(); saveState();
+  });
+});
+document.body.addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-action]');
+  if(!btn) return;
+  const key = btn.dataset.side==='buy' ? 'buyStage' : 'sellStage';
+  if(btn.dataset.action==='stop')  state[key] = Math.min(MAX_STAGES, state[key]+1);
+  if(btn.dataset.action==='reset') state[key] = 1;
+  render(); saveState();
+});
+document.getElementById('tableToggle').addEventListener('click', ()=>{
+  const w = document.getElementById('tableWrap');
+  const showing = w.style.display !== 'none';
+  w.style.display = showing ? 'none' : 'block';
+  document.getElementById('tableToggle').textContent = showing ? 'Показать таблицу ▾' : 'Скрыть таблицу ▴';
+});
+
+loadState();
+</script>
+</body>
+</html>
